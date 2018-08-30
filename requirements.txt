@@ -1,0 +1,8 @@
+torch
+
+tqdm
+sklearn
+spacy
+ftfy
+pandas
+scipy
