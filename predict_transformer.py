@@ -5,7 +5,8 @@ from model_pytorch import TransformerModel, DEFAULT_CONFIG
 from model_pytorch import load_openai_pretrained_model
 from text_utils import TextEncoder
 import torch
-import numpy
+import numpy as np
+import pickle
 
 
 def get_range_vector(size: int, device: int) -> torch.Tensor:
@@ -78,6 +79,7 @@ def transformer_predict(input_file: str, output_file: str, text_encoder: TextEnc
     input_tensor = torch.Tensor(
         [pad_sequence_to_length(s, desired_length=512) for s in encoded_sentences]
         , device="cuda").cuda().long()
+    masks = [np.ones(len(s)) + np.zeros(n_ctx - len(s)) for s in encoded_sentences]
 
     batch_size, num_timesteps = input_tensor.size()
 
@@ -91,7 +93,11 @@ def transformer_predict(input_file: str, output_file: str, text_encoder: TextEnc
     transformer = transformer.cuda()
     transformer_embeddings = transformer(batch_tensor)
     transformer_embeddings_numpy = transformer_embeddings.data.cpu().numpy()
-    numpy.save(output_file, transformer_embeddings_numpy)
+    dict = {
+        "mask": masks,
+        "embedding": transformer_embeddings_numpy
+    }
+    pickle.dump(dict, output_file)
 
 
 if __name__ == '__main__':
