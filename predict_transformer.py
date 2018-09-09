@@ -84,7 +84,7 @@ def transformer_predict(input_file: str, output_file: str, text_encoder: TextEnc
 
     batch_tensor = torch.stack(
         [input_tensor,
-         positional_encodings.expand(batch_size, num_timesteps)
+         positional_encodings.expand(batch_size, num_timesteps).cpu()
          ],
         dim=-1)
     transformer_embeddings = transformer(batch_tensor)
