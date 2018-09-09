@@ -65,6 +65,12 @@ def pad_sequence_to_length(sequence: List,
 
 
 def transformer_predict(input_file: str, output_file: str, text_encoder: TextEncoder, device: int):
+
+    if device > -1:
+        device_name = "cuda"
+    else:
+        device_name = "cpu"
+
     print(input_file)
     n_ctx = 512
 
@@ -81,9 +87,11 @@ def transformer_predict(input_file: str, output_file: str, text_encoder: TextEnc
             (np.ones(len(s)) + np.zeros(n_ctx - len(s)))
         ) for s in encoded_sentences]
 
-    input_tensor = torch.Tensor(
+    input_tensor = torch.LongTensor(
         [pad_sequence_to_length(s, desired_length=512) for s in encoded_sentences]
-        , device="cuda").cuda().long()
+    )
+    if device_name == "cuda":
+        input_tensor = input_tensor.cuda()
 
     batch_size, num_timesteps = input_tensor.size()
 
@@ -94,7 +102,9 @@ def transformer_predict(input_file: str, output_file: str, text_encoder: TextEnc
          positional_encodings.expand(batch_size, num_timesteps)],
         dim=-1)
 
-    transformer = transformer.cuda()
+    if device_name == "cuda":
+        transformer = transformer.cuda()
+
     transformer_embeddings = transformer(batch_tensor)
     transformer_embeddings_numpy = transformer_embeddings.data.cpu().numpy()
     dict = {
