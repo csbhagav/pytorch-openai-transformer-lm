@@ -67,7 +67,7 @@ def transformer_predict(input_file: str, output_file: str, text_encoder: TextEnc
     print(input_file)
     n_ctx = 512
 
-    transformer = TransformerModel(DEFAULT_CONFIG, vocab=40993, n_ctx=n_ctx)
+    transformer = TransformerModel(DEFAULT_CONFIG, vocab=40993, n_ctx=n_ctx).cuda()
     load_openai_pretrained_model(transformer, n_ctx=n_ctx, n_special=3)
 
     with open(input_file) as f:
@@ -75,8 +75,9 @@ def transformer_predict(input_file: str, output_file: str, text_encoder: TextEnc
 
     encoded_sentences = text_encoder.encode(sentences)
 
-    input_tensor = torch.Tensor([pad_sequence_to_length(s, desired_length=512) for s in
-                                 encoded_sentences], device="cuda").long()
+    input_tensor = torch.Tensor(
+        [pad_sequence_to_length(s, desired_length=512) for s in encoded_sentences]
+        , device="cuda").cuda().long()
 
     batch_size, num_timesteps = input_tensor.size()
 
@@ -84,8 +85,7 @@ def transformer_predict(input_file: str, output_file: str, text_encoder: TextEnc
 
     batch_tensor = torch.stack(
         [input_tensor,
-         positional_encodings.expand(batch_size, num_timesteps)
-         ],
+         positional_encodings.expand(batch_size, num_timesteps)],
         dim=-1)
     transformer_embeddings = transformer(batch_tensor)
     transformer_embeddings_numpy = transformer_embeddings.data.cpu().numpy()
