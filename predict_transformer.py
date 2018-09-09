@@ -76,11 +76,14 @@ def transformer_predict(input_file: str, output_file: str, text_encoder: TextEnc
 
     encoded_sentences = text_encoder.encode(sentences)
 
+    masks = \
+        [np.concatenate(
+            (np.ones(len(s)) + np.zeros(n_ctx - len(s)))
+        ) for s in encoded_sentences]
+
     input_tensor = torch.Tensor(
         [pad_sequence_to_length(s, desired_length=512) for s in encoded_sentences]
         , device="cuda").cuda().long()
-    masks = [np.concatenate(
-        (np.ones(len(s)) + np.zeros(n_ctx - len(s)))) for s in encoded_sentences]
 
     batch_size, num_timesteps = input_tensor.size()
 
