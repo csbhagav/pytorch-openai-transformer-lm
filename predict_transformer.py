@@ -103,6 +103,7 @@ if __name__ == '__main__':
     output_file = args.output_file
     encoder_path = args.encoder_path
     bpe_path = args.bpe_path
+    device = args.device
 
     text_encoder = TextEncoder(encoder_path, bpe_path)
 
@@ -110,4 +111,4 @@ if __name__ == '__main__':
         input_file=input_file,
         output_file=output_file,
         text_encoder=text_encoder,
-        device=-1)
+        device=device)
