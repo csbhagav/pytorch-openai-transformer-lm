@@ -82,9 +82,8 @@ def transformer_predict(input_file: str, output_file: str, text_encoder: TextEnc
 
     encoded_sentences = text_encoder.encode(sentences)
 
-    masks = \
-        [np.concatenate(
-            (np.ones(len(s)) + np.zeros(n_ctx - len(s)))
+    masks = [np.concatenate(
+            (np.ones(len(s)), np.zeros(n_ctx - len(s)))
         ) for s in encoded_sentences]
 
     input_tensor = torch.LongTensor(
@@ -111,7 +110,7 @@ def transformer_predict(input_file: str, output_file: str, text_encoder: TextEnc
         "mask": masks,
         "embedding": transformer_embeddings_numpy
     }
-    pickle.dump(dict, output_file)
+    pickle.dump(dict, open(output_file, "wb"))
 
 
 if __name__ == '__main__':
