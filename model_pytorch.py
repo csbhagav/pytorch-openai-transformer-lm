@@ -9,6 +9,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.parameter import Parameter
+import random
 
 
 def gelu(x):
@@ -66,7 +67,7 @@ class Conv1D(nn.Module):
 
 
 class Attention(nn.Module):
-    def __init__(self, nx, n_ctx, cfg, scale=False):
+    def __init__(self, nx, n_ctx, cfg, scale=False, requires_grad: bool = False):
         super(Attention, self).__init__()
         n_state = nx  # in Attention: n_state=768 (nx=n_embd)
         # [switch nx => n_state from Block to Attention to keep identical to TF implem]
@@ -79,6 +80,12 @@ class Attention(nn.Module):
         self.c_proj = Conv1D(n_state, 1, nx)
         self.attn_dropout = nn.Dropout(cfg.attn_pdrop)
         self.resid_dropout = nn.Dropout(cfg.resid_pdrop)
+
+        self.attn_dropout.training = requires_grad
+        self.resid_dropout.training = requires_grad
+
+        for parameter in self.parameters():
+            parameter.requires_grad = requires_grad
 
     def _attn(self, q, k, v):
         w = torch.matmul(q, k)
@@ -116,13 +123,19 @@ class Attention(nn.Module):
 
 
 class MLP(nn.Module):
-    def __init__(self, n_state, cfg):  # in MLP: n_state=3072 (4 * n_embd)
+    def __init__(self, n_state, cfg, requires_grad: bool=False):  # in MLP: n_state=3072 (4 * # n_embd)
         super(MLP, self).__init__()
         nx = cfg.n_embd
         self.c_fc = Conv1D(n_state, 1, nx)
         self.c_proj = Conv1D(nx, 1, n_state)
         self.act = ACT_FNS[cfg.afn]
         self.dropout = nn.Dropout(cfg.resid_pdrop)
+
+        self.dropout.training = requires_grad
+
+        for parameter in self.parameters():
+            parameter.requires_grad = requires_grad
+
 
     def forward(self, x):
         h = self.act(self.c_fc(x))
@@ -131,13 +144,16 @@ class MLP(nn.Module):
 
 
 class Block(nn.Module):
-    def __init__(self, n_ctx, cfg, scale=False):
+    def __init__(self, n_ctx, cfg, scale=False, requires_grad: bool = False):
         super(Block, self).__init__()
         nx = cfg.n_embd
-        self.attn = Attention(nx, n_ctx, cfg, scale)
+        self.attn = Attention(nx, n_ctx, cfg, scale, requires_grad=requires_grad)
         self.ln_1 = LayerNorm(nx)
-        self.mlp = MLP(4 * nx, cfg)
+        self.mlp = MLP(4 * nx, cfg, requires_grad=requires_grad)
         self.ln_2 = LayerNorm(nx)
+
+        for parameter in self.parameters():
+            parameter.requires_grad = requires_grad
 
     def forward(self, x):
         a = self.attn(x)
@@ -150,17 +166,20 @@ class Block(nn.Module):
 class TransformerModel(nn.Module):
     """ Transformer model """
 
-    def __init__(self, cfg, vocab=40990, n_ctx=512):
+    def __init__(self, cfg, vocab=40990, n_ctx=512, requires_grad=True):
         super(TransformerModel, self).__init__()
         self.vocab = vocab
         self.embed = nn.Embedding(vocab, cfg.n_embd)
-        self.drop = nn.Dropout(cfg.embd_pdrop)
-        block = Block(n_ctx, cfg, scale=True)
+        # self.drop = nn.Dropout(cfg.embd_pdrop)
+        block = Block(n_ctx, cfg, scale=True, requires_grad=requires_grad)
         self.h = nn.ModuleList([copy.deepcopy(block) for _ in range(cfg.n_layer)])
         self.decoder = nn.Linear(cfg.n_embd, vocab, bias=False)
         self.decoder.weight = self.embed.weight  # Tied weights
 
         nn.init.normal_(self.embed.weight, std=0.02)
+
+        for parameter in self.parameters():
+            parameter.requires_grad = requires_grad
 
     def forward(self, x):
         x = x.view(-1, x.size(-2), x.size(-1))
@@ -180,7 +199,7 @@ class LMHead(nn.Module):
         self.n_embd = cfg.n_embd
         embed_shape = model.embed.weight.shape
         self.decoder = nn.Linear(embed_shape[1], embed_shape[0], bias=False)
-        self.decoder.weight = model.embed.weight # Tied weights
+        self.decoder.weight = model.embed.weight  # Tied weights
 
     def forward(self, h):
         # Truncated Language modeling logits (we remove the last token)
@@ -196,10 +215,11 @@ class MultipleChoiceHead(nn.Module):
         super(MultipleChoiceHead, self).__init__()
         self.n_embd = cfg.n_embd
         self.clf_token = clf_token
-        self.dropout = nn.Dropout2d(cfg.clf_pdrop)  # To reproduce the noise_shape parameter of TF implementation
+        self.dropout = nn.Dropout2d(
+            cfg.clf_pdrop)  # To reproduce the noise_shape parameter of TF implementation
         self.linear = nn.Linear(cfg.n_embd, 1)
 
-        nn.init.normal_(self.linear.weight, std = 0.02)
+        nn.init.normal_(self.linear.weight, std=0.02)
         nn.init.normal_(self.linear.bias, 0)
 
     def forward(self, h, x):
@@ -223,6 +243,7 @@ class ClfHead(nn.Module):
     """Classification Head for the transformer
 
     TODO: test this class."""
+
     def __init__(self, clf_token, cfg, n_class):
         super(ClfHead, self).__init__()
         self.n_embd = cfg.n_embd
@@ -230,7 +251,7 @@ class ClfHead(nn.Module):
         self.dropout = nn.Dropout(cfg.clf_pdrop)
         self.linear = nn.Linear(cfg.n_embd, n_class)
 
-        nn.init.normal_(self.linear.weight, std = 0.02)
+        nn.init.normal_(self.linear.weight, std=0.02)
         nn.init.normal_(self.linear.bias, 0)
 
     def forward(self, h, x):
@@ -242,10 +263,12 @@ class ClfHead(nn.Module):
 
         return clf_logits
 
+
 class SimilarityHead(nn.Module):
     """ Similarity Head for the transformer
 
         TODO: test this class."""
+
     def __init__(self, clf_token, cfg):
         super(SimilarityHead, self).__init__()
         self.n_embd = cfg.n_embd
@@ -253,7 +276,7 @@ class SimilarityHead(nn.Module):
         self.dropout = nn.Dropout(cfg.clf_pdrop)
         self.linear = nn.Linear(cfg.n_embd, 1)
 
-        nn.init.normal_(self.linear.weight, std = 0.02)
+        nn.init.normal_(self.linear.weight, std=0.02)
         nn.init.normal_(self.linear.bias, 0)
 
     def forward(self, h, x):
@@ -261,13 +284,15 @@ class SimilarityHead(nn.Module):
         flat = x[..., 0].contiguous().view(-1)
         sim_h = sim_h[flat == self.clf_token, :]
         sim_h = self.dropout(sim_h)
-        sim_h = sim_h.sum(dim = 1)
+        sim_h = sim_h.sum(dim=1)
         sim_logits = self.linear(sim_h)
 
         return sim_logits
 
+
 class DoubleHeadModel(nn.Module):
     """ Transformer with language model and task specific heads """
+
     def __init__(self, cfg, clf_token, task_head_type, vocab=40990, n_ctx=512):
         super(DoubleHeadModel, self).__init__()
         self.transformer = TransformerModel(cfg, vocab=vocab, n_ctx=n_ctx)
@@ -285,7 +310,7 @@ class DoubleHeadModel(nn.Module):
                                  "'similarity', 'inference' or ('classification', n_class) "
                                  f"got {task_head_type}.")
         elif isinstance(task_head_type, collections.abc.Sequence) and len(task_head_type) == 2 and \
-             task_head_type[0] == 'classification':
+                task_head_type[0] == 'classification':
             n_class = task_head_type[1]
             self.task_head = ClfHead(clf_token, cfg, n_class)
         else:
@@ -301,7 +326,8 @@ class DoubleHeadModel(nn.Module):
         return lm_logits, task_logits
 
 
-def load_openai_pretrained_model(model, n_ctx=-1, n_special=-1, n_transfer=12, n_embd=768, path='./model/',
+def load_openai_pretrained_model(model, n_ctx=-1, n_special=-1, n_transfer=12, n_embd=768,
+                                 path='./model/',
                                  path_names='./'):
     # Load weights from TF model
     print("Loading weights...")

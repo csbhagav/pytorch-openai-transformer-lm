@@ -7,6 +7,7 @@ from text_utils import TextEncoder
 import torch
 import numpy as np
 import pickle
+import random
 
 
 def get_range_vector(size: int, device: int) -> torch.Tensor:
@@ -64,8 +65,7 @@ def pad_sequence_to_length(sequence: List,
     return padded_sequence
 
 
-def transformer_predict(input_file: str, output_file: str, text_encoder: TextEncoder, device: int):
-
+def transformer_predict(input_file: str, text_encoder: TextEncoder, device: int):
     if device > -1:
         device_name = "cuda"
     else:
@@ -74,8 +74,8 @@ def transformer_predict(input_file: str, output_file: str, text_encoder: TextEnc
     print(input_file)
     n_ctx = 512
 
-    transformer = TransformerModel(DEFAULT_CONFIG, vocab=40993, n_ctx=n_ctx)
-    load_openai_pretrained_model(transformer, n_ctx=n_ctx, n_special=3)
+    transformer = TransformerModel(DEFAULT_CONFIG, n_ctx=n_ctx, requires_grad=False)
+    load_openai_pretrained_model(transformer, n_ctx=n_ctx)
 
     with open(input_file) as f:
         sentences = f.readlines()
@@ -105,18 +105,14 @@ def transformer_predict(input_file: str, output_file: str, text_encoder: TextEnc
         transformer = transformer.cuda()
 
     transformer_embeddings = transformer(batch_tensor)
-    transformer_embeddings_numpy = transformer_embeddings.data.cpu().numpy()
-    dict = {
-        "mask": masks,
-        "embedding": transformer_embeddings_numpy
-    }
-    pickle.dump(dict, open(output_file, "wb"))
+
+    np.save("openai_transformer_test_input.npy", batch_tensor.data.cpu().numpy())
+    np.save("openai_transformer_test_output.npy", transformer_embeddings.data.cpu().numpy())
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--input_file', type=str)
-    parser.add_argument('--output_file', type=str)
     parser.add_argument('--encoder_path', type=str, default='model/encoder_bpe_40000.json')
     parser.add_argument('--bpe_path', type=str, default='model/vocab_40000.bpe')
     parser.add_argument('--device', type=int, default='-1')
@@ -125,7 +121,6 @@ if __name__ == '__main__':
     print(args)
 
     input_file = args.input_file
-    output_file = args.output_file
     encoder_path = args.encoder_path
     bpe_path = args.bpe_path
     device = args.device
@@ -134,6 +129,5 @@ if __name__ == '__main__':
 
     transformer_predict(
         input_file=input_file,
-        output_file=output_file,
         text_encoder=text_encoder,
         device=device)
