@@ -234,16 +234,17 @@ if __name__ == '__main__':
 
     criterion = nn.CrossEntropyLoss(reduce=False)
     model_opt = OpenAIAdam(dh_model.parameters(),
-                           lr=args.lr,
-                           schedule=args.lr_schedule,
-                           warmup=args.lr_warmup,
+                           lr=args.lr, # 6.25e-5
+                           schedule=args.lr_schedule, # warmup_linear
+                           warmup=args.lr_warmup, # 0.002
                            t_total=n_updates_total,
-                           b1=args.b1,
-                           b2=args.b2,
-                           e=args.e,
-                           l2=args.l2,
+                           b1=args.b1, # 0.9
+                           b2=args.b2, # 0.999
+                           e=args.e, # 1e-8
+                           l2=args.l2, # 0.01
                            vector_l2=args.vector_l2,
-                           max_grad_norm=args.max_grad_norm)
+                           max_grad_norm=args.max_grad_norm # 1
+                           )
     compute_loss_fct = MultipleChoiceLossCompute(criterion,
                                                  criterion,
                                                  args.lm_coef,

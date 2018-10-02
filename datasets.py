@@ -28,8 +28,8 @@ def _rocstories(path):
         return st, ct1, ct2, y
 
 def rocstories(data_dir, n_train=1497, n_valid=374):
-    storys, comps1, comps2, ys = _rocstories(os.path.join(data_dir, 'cloze_test_val__spring2016 - cloze_test_ALL_val.csv'))
-    teX1, teX2, teX3, _ = _rocstories(os.path.join(data_dir, 'cloze_test_test__spring2016 - cloze_test_ALL_test.csv'))
+    storys, comps1, comps2, ys = _rocstories(os.path.join(data_dir, 'valid.csv'))
+    teX1, teX2, teX3, _ = _rocstories(os.path.join(data_dir, 'test.csv'))
     tr_storys, va_storys, tr_comps1, va_comps1, tr_comps2, va_comps2, tr_ys, va_ys = train_test_split(storys, comps1, comps2, ys, test_size=n_valid, random_state=seed)
     trX1, trX2, trX3 = [], [], []
     trY = []
