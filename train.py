@@ -17,6 +17,7 @@ from utils import (encode_dataset, iter_data,
                    ResultLogger, make_path)
 from loss import MultipleChoiceLossCompute
 
+
 def transform_roc(X1, X2, X3):
     n_batch = len(X1)
     xmb = np.zeros((n_batch, 2, n_ctx, 2), dtype=np.int32)
@@ -43,7 +44,8 @@ def iter_apply(Xs, Ms, Ys):
     cost = 0
     with torch.no_grad():
         dh_model.eval()
-        for xmb, mmb, ymb in iter_data(Xs, Ms, Ys, n_batch=n_batch_train, truncate=False, verbose=True):
+        for xmb, mmb, ymb in iter_data(Xs, Ms, Ys, n_batch=n_batch_train, truncate=False,
+                                       verbose=True):
             n = len(xmb)
             XMB = torch.tensor(xmb, dtype=torch.long).to(device)
             YMB = torch.tensor(ymb, dtype=torch.long).to(device)
@@ -81,7 +83,8 @@ def log(save_dir, desc):
     va_cost = va_cost / n_valid
     tr_acc = accuracy_score(trY[:n_valid], np.argmax(tr_logits, 1)) * 100.
     va_acc = accuracy_score(vaY, np.argmax(va_logits, 1)) * 100.
-    logger.log(n_epochs=n_epochs, n_updates=n_updates, tr_cost=tr_cost, va_cost=va_cost, tr_acc=tr_acc, va_acc=va_acc)
+    logger.log(n_epochs=n_epochs, n_updates=n_updates, tr_cost=tr_cost, va_cost=va_cost,
+               tr_acc=tr_acc, va_acc=va_acc)
     print('%d %d %.3f %.3f %.2f %.2f' % (n_epochs, n_updates, tr_cost, va_cost, tr_acc, va_acc))
     if submit:
         score = va_acc
@@ -218,7 +221,7 @@ if __name__ == '__main__':
                                    len(x3[:max_len])) for x1, x2, x3 in zip(vaX1, vaX2, vaX3)]
         + [len(x1[:max_len]) + max(len(x2[:max_len]),
                                    len(x3[:max_len])) for x1, x2, x3 in zip(teX1, teX2, teX3)]
-        ) + 3, n_ctx)
+    ) + 3, n_ctx)
     vocab = n_vocab + n_special + n_ctx
     trX, trM = transform_roc(trX1, trX2, trX3)
     vaX, vaM = transform_roc(vaX1, vaX2, vaX3)
@@ -233,17 +236,17 @@ if __name__ == '__main__':
     dh_model = DoubleHeadModel(args, clf_token, 'multiple_choice', vocab, n_ctx)
 
     criterion = nn.CrossEntropyLoss(reduce=False)
-    model_opt = OpenAIAdam(dh_model.parameters(),
-                           lr=args.lr, # 6.25e-5
-                           schedule=args.lr_schedule, # warmup_linear
-                           warmup=args.lr_warmup, # 0.002
+    model_opt = OpenAIAdam(params=dh_model.parameters(),
+                           lr=args.lr,  # 6.25e-5
+                           schedule=args.lr_schedule,  # warmup_linear
+                           warmup=args.lr_warmup,  # 0.002
                            t_total=n_updates_total,
-                           b1=args.b1, # 0.9
-                           b2=args.b2, # 0.999
-                           e=args.e, # 1e-8
-                           l2=args.l2, # 0.01
+                           b1=args.b1,  # 0.9
+                           b2=args.b2,  # 0.999
+                           e=args.e,  # 1e-8
+                           l2=args.l2,  # 0.01
                            vector_l2=args.vector_l2,
-                           max_grad_norm=args.max_grad_norm # 1
+                           max_grad_norm=args.max_grad_norm  # 1
                            )
     compute_loss_fct = MultipleChoiceLossCompute(criterion,
                                                  criterion,

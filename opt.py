@@ -25,7 +25,7 @@ SCHEDULES = {
 class OpenAIAdam(Optimizer):
     """Implements Open AI version of Adam algorithm with weight decay fix.
     """
-    def s__init__(self, params, lr, schedule, warmup, t_total,
+    def __init__(self, params, lr, schedule, warmup, t_total,
                  b1=0.9, b2=0.999, e=1e-8, l2=0,
                  vector_l2=False, max_grad_norm=-1, **kwargs):
         if not 0.0 <= lr:
