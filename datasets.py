@@ -29,12 +29,22 @@ def _rocstories(path):
                 y.append(int(line[-1])-1)
         return ids, st, ct1, ct2, y
 
+
+def write_to_file(lst, filename):
+    with open(filename, "w") as f:
+        for item in lst:
+            f.write(item)
+            f.write("\n")
+    f.close()
+
 def rocstories(data_dir, n_train=1497, n_valid=374):
     ids, storys, comps1, comps2, ys = _rocstories(os.path.join(data_dir, 'valid.csv'))
     teIds, teX1, teX2, teX3, _ = _rocstories(os.path.join(data_dir, 'test.csv'))
     tr_ids, va_ids, tr_storys, va_storys, tr_comps1, va_comps1, tr_comps2, va_comps2, tr_ys, \
     va_ys = \
         train_test_split(ids, storys, comps1, comps2, ys, test_size=n_valid, random_state=seed)
+    write_to_file(tr_ids, "./train_ids.lst")
+    write_to_file(va_ids, "./valid_ids.lst")
     trX1, trX2, trX3 = [], [], []
     trY = []
     for s, c1, c2, y in zip(tr_storys, tr_comps1, tr_comps2, tr_ys):
