@@ -75,9 +75,9 @@ def _anli(path):
         y = []
         for i, line in enumerate(tqdm(list(f), ncols=80, leave=False)):
             if i > 0:
-                s = ' '.join([line[2], line[6]])
-                c1 = line[7]
-                c2 = line[8]
+                s = ' '.join([line[2]])
+                c1 = ' '.join([line[7], line[6]])
+                c2 = ' '.join([line[8], line[6]])
                 ids.append(line[0])
                 st.append(s)
                 ct1.append(c1)
