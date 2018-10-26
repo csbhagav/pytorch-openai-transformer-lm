@@ -9,7 +9,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.utils import shuffle
 
 from analysis import rocstories as rocstories_analysis
-from datasets import rocstories
+from datasets import rocstories, anli
 from model_pytorch import DoubleHeadModel, load_openai_pretrained_model
 from opt import OpenAIAdam
 from text_utils import TextEncoder
@@ -206,7 +206,7 @@ if __name__ == '__main__':
     print("Encoding dataset...")
     ((trX1, trX2, trX3, trY),
      (vaX1, vaX2, vaX3, vaY),
-     (teX1, teX2, teX3)) = encode_dataset(*rocstories(data_dir, n_valid=args.n_valid),
+     (teX1, teX2, teX3)) = encode_dataset(*anli(data_dir, n_valid=args.n_valid),
                                           encoder=text_encoder)
     encoder['_start_'] = len(encoder)
     encoder['_delimiter_'] = len(encoder)
@@ -240,7 +240,7 @@ if __name__ == '__main__':
                            lr=args.lr,  # 6.25e-5
                            schedule=args.lr_schedule,  # warmup_linear
                            warmup=args.lr_warmup,  # 0.002
-                           t_total=n_updates_total,
+                           t_total=n_updates_total, # 748
                            b1=args.b1,  # 0.9
                            b2=args.b2,  # 0.999
                            e=args.e,  # 1e-8
