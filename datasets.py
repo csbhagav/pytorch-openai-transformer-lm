@@ -65,6 +65,27 @@ def rocstories(data_dir, n_train=1497, n_valid=374):
     return (trX1, trX2, trX3, trY), (vaX1, vaX2, vaX3, vaY), (teX1, teX2, teX3)
 
 
+# def _anli(path):
+#     with open(path, encoding='utf_8') as f:
+#         f = csv.reader(f)
+#         ids = []
+#         st = []
+#         ct1 = []
+#         ct2 = []
+#         y = []
+#         for i, line in enumerate(tqdm(list(f), ncols=80, leave=False)):
+#             if i > 0:
+#                 s = ' '.join([line[2]])
+#                 c1 = ' '.join([line[7], line[6]])
+#                 c2 = ' '.join([line[8], line[6]])
+#                 ids.append(line[0])
+#                 st.append(s)
+#                 ct1.append(c1)
+#                 ct2.append(c2)
+#                 y.append(int(line[-1])-1)
+#         return ids, st, ct1, ct2, y
+
+
 def _anli(path):
     with open(path, encoding='utf_8') as f:
         f = csv.reader(f)
@@ -75,9 +96,9 @@ def _anli(path):
         y = []
         for i, line in enumerate(tqdm(list(f), ncols=80, leave=False)):
             if i > 0:
-                s = ' '.join([line[2]])
-                c1 = ' '.join([line[7], line[6]])
-                c2 = ' '.join([line[8], line[6]])
+                s = ' '.join([line[2], line[6]])
+                c1 = ' '.join([line[7]])
+                c2 = ' '.join([line[8]])
                 ids.append(line[0])
                 st.append(s)
                 ct1.append(c1)
