@@ -95,8 +95,8 @@ def write_to_file(lst, filename):
 
 
 def anli(data_dir, n_train=1497, n_valid=500):
-    ids, storys, comps1, comps2, ys = _anli(os.path.join(data_dir, 'train.tsv'))
-    teIds, teX1, teX2, teX3, _ = _anli(os.path.join(data_dir, 'test.tsv'))
+    ids, storys, comps1, comps2, ys = _anli(os.path.join(data_dir, 'train.csv'))
+    teIds, teX1, teX2, teX3, _ = _anli(os.path.join(data_dir, 'test.csv'))
     tr_ids, va_ids, tr_storys, va_storys, tr_comps1, va_comps1, tr_comps2, va_comps2, tr_ys, \
     va_ys = \
         train_test_split(ids, storys, comps1, comps2, ys, test_size=n_valid, random_state=seed)
